@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  listener_sim
+  SAM Template for listener_sim lambda
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+
+Resources:
+
+  PredictFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: .
+      Handler: function.lambda_handler
+      Runtime: python3.7
+      Timeout: 300
+      Environment:
+        Variables:
+          DATABASE: events_anomaly
+          DB_USER:
+          PASSWORD:
+          PORT: 3306
+          HOST: docker.for.mac.host.internal
+          SM_ENDPOINT: linear-learner
+          HIGH_MULTIPLE: 3
+          LOW_MULTIPLE: 3
+          ALERT_TOPIC: arn:aws:sns:::event-anomaly-alert
+      Events:
+        PredictEndpoint:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /predict
+            Method: get
+        PredictEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+            Input: {}
+
+Outputs:
+
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  PredictApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cea/"
+
+  PredictFunction:
+    Description: "Listener Sim Lambda Function ARN"
+    Value: !GetAtt PredictFunction.Arn
+
+  PredictFucntionIamRole:
+    Description: "Implicit IAM Role created for function"
+    Value: !GetAtt PredictFunctionRole.Arn
